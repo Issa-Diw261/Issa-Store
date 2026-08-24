@@ -8,11 +8,19 @@ const firebaseConfig = {
   appId: "1:704815624988:web:b13ac9bcfd838dddfc40d9",
 };
 
-// تشغيل Firebase و Firestore
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ============ 2. قائمة الهاتف المنسدلة (Hamburger Menu) ============
+// ============ 2. تهيئة EMAILJS ============
+const EMAILJS_PUBLIC_KEY = "rD_YVxfijyu8AMQPZ";
+const EMAILJS_SERVICE_ID = "service_5jxzcki";
+const EMAILJS_TEMPLATE_ID = "template_4qop18i";
+
+if (window.emailjs) {
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+}
+
+// ============ 3. قائمة الهاتف المنسدلة (Hamburger Menu) ============
 const menuToggle = document.getElementById("menuToggle");
 const navLinks = document.getElementById("navLinks");
 const navItems = document.querySelectorAll(".nav-item");
@@ -37,9 +45,8 @@ if (menuToggle && navLinks) {
   });
 }
 
-// ============ 3. تفعيل الحركة عند التمرير للأقسام ============
+// ============ 4. تفعيل الحركة عند التمرير للأقسام ============
 const sections = document.querySelectorAll(".why, .how-to-order");
-
 const observer = new IntersectionObserver(
   (entries) => {
     entries.forEach((entry) => {
@@ -52,30 +59,24 @@ const observer = new IntersectionObserver(
   },
   { threshold: 0.2 },
 );
-
 sections.forEach((section) => observer.observe(section));
 
-// ============ 4. البحث الحي بين بطاقات الخدمات ============
+// ============ 5. البحث الحي بين بطاقات الخدمات ============
 const searchInput = document.getElementById("serviceSearch");
 if (searchInput) {
   searchInput.addEventListener("input", (e) => {
     const term = e.target.value.toLowerCase().trim();
     const cards = document.querySelectorAll(".cards .card");
-
     cards.forEach((card) => {
       const title = card.querySelector("h2").textContent.toLowerCase();
       const desc = card.querySelector("p").textContent.toLowerCase();
-
-      if (title.includes(term) || desc.includes(term)) {
-        card.style.display = "block";
-      } else {
-        card.style.display = "none";
-      }
+      card.style.display =
+        title.includes(term) || desc.includes(term) ? "block" : "none";
     });
   });
 }
 
-// ============ 5. نظام تقييمات العملاء التفاعلي (FIRESTORE) ============
+// ============ 6. نظام تقييمات العملاء التفاعلي (Firestore) ============
 let selectedRating = 5;
 const starContainer = document.getElementById("starRating");
 const ratingText = document.getElementById("ratingValueText");
@@ -100,7 +101,8 @@ if (starContainer) {
   updateStarDisplay(selectedRating);
   const stars = starContainer.querySelectorAll("i");
   stars.forEach((star) => {
-    star.addEventListener("click", () => {
+    star.addEventListener("click", (e) => {
+      e.stopPropagation();
       selectedRating = parseInt(star.getAttribute("data-val"));
       updateStarDisplay(selectedRating);
     });
@@ -109,34 +111,39 @@ if (starContainer) {
 
 const reviewsContainer = document.getElementById("reviewsContainer");
 
-// جلب التقييمات وعرضها حياً من Firebase
 function listenToReviews() {
   if (!reviewsContainer) return;
 
-  db.collection("reviews")
-    .orderBy("createdAt", "desc")
-    .onSnapshot(
-      (snapshot) => {
-        if (snapshot.empty) {
-          reviewsContainer.innerHTML = `<div class="no-reviews-msg">كن أول من يقيّم خدماتنا ويشارك تجربته!</div>`;
-          return;
+  db.collection("reviews").onSnapshot(
+    (snapshot) => {
+      if (snapshot.empty) {
+        reviewsContainer.innerHTML = `<div class="no-reviews-msg">كن أول من يقيّم خدماتنا ويشارك تجربته!</div>`;
+        return;
+      }
+
+      let reviewsList = [];
+      snapshot.forEach((doc) => {
+        reviewsList.push(doc.data());
+      });
+
+      // ترتيب التقييمات تنازلياً حسب التاريخ
+      reviewsList.sort(
+        (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0),
+      );
+
+      reviewsContainer.innerHTML = "";
+      reviewsList.forEach((rev) => {
+        let starsHtml = "";
+        for (let i = 1; i <= 5; i++) {
+          starsHtml +=
+            i <= rev.rating
+              ? `<i class="fa-solid fa-star"></i> `
+              : `<i class="fa-regular fa-star"></i> `;
         }
 
-        reviewsContainer.innerHTML = "";
-        snapshot.forEach((doc) => {
-          const rev = doc.data();
-          let starsHtml = "";
-          for (let i = 1; i <= 5; i++) {
-            if (i <= rev.rating) {
-              starsHtml += `<i class="fa-solid fa-star"></i> `;
-            } else {
-              starsHtml += `<i class="fa-regular fa-star"></i> `;
-            }
-          }
-
-          const reviewCard = document.createElement("div");
-          reviewCard.className = "review-box";
-          reviewCard.innerHTML = `
+        const reviewCard = document.createElement("div");
+        reviewCard.className = "review-box";
+        reviewCard.innerHTML = `
           <div class="stars">${starsHtml}</div>
           <p>"${rev.comment || "تقييم ممتاز بدون تعليق إضافي"}"</p>
           <div class="user-info">
@@ -147,21 +154,19 @@ function listenToReviews() {
             </div>
           </div>
         `;
-          reviewsContainer.appendChild(reviewCard);
-        });
-      },
-      (error) => {
-        console.error("Error fetching reviews:", error);
-        reviewsContainer.innerHTML = `<div class="no-reviews-msg">حدث خطأ في تحميل التقييمات.</div>`;
-      },
-    );
+        reviewsContainer.appendChild(reviewCard);
+      });
+    },
+    (error) => {
+      console.error("Firebase fetch error:", error);
+      reviewsContainer.innerHTML = `<div class="no-reviews-msg">تعذر تحميل التقييمات حالياً.</div>`;
+    },
+  );
 }
 
-// دالة فحص البريد الإلكتروني الحقيقي
 function isValidEmail(email) {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(email)) return false;
-
   const fakeDomains = [
     "tempmail.com",
     "10minutemail.com",
@@ -172,12 +177,9 @@ function isValidEmail(email) {
     "sharklasers.com",
   ];
   const domain = email.split("@")[1].toLowerCase();
-  if (fakeDomains.includes(domain)) return false;
-
-  return true;
+  return !fakeDomains.includes(domain);
 }
 
-// معالجة إرسال التقييم وحفظه في Firebase
 const reviewForm = document.getElementById("reviewForm");
 const submitReviewBtn = document.getElementById("submitReviewBtn");
 
@@ -190,9 +192,7 @@ if (reviewForm) {
     const comment = document.getElementById("reviewerComment").value.trim();
 
     if (!isValidEmail(email)) {
-      alert(
-        "يرجى إدخال بريد إلكتروني حقيقي وصحيح (مثل Gmail أو Yahoo أو Outlook).",
-      );
+      alert("يرجى إدخال بريد إلكتروني حقيقي وصحيح.");
       return;
     }
 
@@ -200,7 +200,7 @@ if (reviewForm) {
     submitReviewBtn.textContent = "جاري الإرسال...";
 
     try {
-      // 1. الحفظ في Firebase Firestore
+      // 1. الحفظ في قاعدة بيانات Firebase
       await db.collection("reviews").add({
         name: name,
         email: email,
@@ -209,14 +209,23 @@ if (reviewForm) {
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
 
-      // 2. إعادة ضبط النموذج
+      // 2. إرسال إشعار فوري إلى بريدك الإلكتروني عبر EmailJS
+      if (window.emailjs) {
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          user_name: name,
+          user_email: email,
+          rating: selectedRating,
+          message: comment || "بدون تعليق إضافي",
+        });
+      }
+
       reviewForm.reset();
       selectedRating = 5;
       updateStarDisplay(selectedRating);
-      alert("شكراً لك! تم إضافة تقييمك وحفظه بنجاح.");
+      alert("شكراً لك! تم نشر تقييمك بنجاح.");
     } catch (error) {
-      console.error("Error adding review:", error);
-      alert("حدث خطأ أثناء إرسال التقييم، يرجى المحاولة مرة أخرى.");
+      console.error("Error submitting review:", error);
+      alert("حدث خطأ أثناء الإرسال، يرجى المحاولة مرة أخرى.");
     } finally {
       submitReviewBtn.disabled = false;
       submitReviewBtn.textContent = "إرسال التقييم";
