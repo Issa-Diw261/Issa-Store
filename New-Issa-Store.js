@@ -1,4 +1,43 @@
-// ============ 1. تفعيل الحركة عند التمرير للأقسام ============
+// ============ 1. تهيئة FIREBASE ============
+const firebaseConfig = {
+  apiKey: "AIzaSyB8EdcXzXo9P_XlLJIIgCgwgfuT55K4DA4",
+  authDomain: "issa-store-95457.firebaseapp.com",
+  projectId: "issa-store-95457",
+  storageBucket: "issa-store-95457.firebasestorage.app",
+  messagingSenderId: "704815624988",
+  appId: "1:704815624988:web:b13ac9bcfd838dddfc40d9",
+};
+
+// تشغيل Firebase و Firestore
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ============ 2. قائمة الهاتف المنسدلة (Hamburger Menu) ============
+const menuToggle = document.getElementById("menuToggle");
+const navLinks = document.getElementById("navLinks");
+const navItems = document.querySelectorAll(".nav-item");
+
+if (menuToggle && navLinks) {
+  menuToggle.addEventListener("click", () => {
+    navLinks.classList.toggle("open");
+    const icon = menuToggle.querySelector("i");
+    if (navLinks.classList.contains("open")) {
+      icon.className = "fa-solid fa-xmark";
+    } else {
+      icon.className = "fa-solid fa-bars";
+    }
+  });
+
+  navItems.forEach((item) => {
+    item.addEventListener("click", () => {
+      navLinks.classList.remove("open");
+      const icon = menuToggle.querySelector("i");
+      if (icon) icon.className = "fa-solid fa-bars";
+    });
+  });
+}
+
+// ============ 3. تفعيل الحركة عند التمرير للأقسام ============
 const sections = document.querySelectorAll(".why, .how-to-order");
 
 const observer = new IntersectionObserver(
@@ -11,14 +50,12 @@ const observer = new IntersectionObserver(
       }
     });
   },
-  {
-    threshold: 0.2,
-  },
+  { threshold: 0.2 },
 );
 
 sections.forEach((section) => observer.observe(section));
 
-// ============ 2. البحث الحي بين بطاقات الخدمات ============
+// ============ 4. البحث الحي بين بطاقات الخدمات ============
 const searchInput = document.getElementById("serviceSearch");
 if (searchInput) {
   searchInput.addEventListener("input", (e) => {
@@ -38,8 +75,8 @@ if (searchInput) {
   });
 }
 
-// ============ 3. نظام تقييمات العملاء التفاعلي وتخزينها ============
-let selectedRating = 5; // القيمة الافتراضية
+// ============ 5. نظام تقييمات العملاء التفاعلي (FIRESTORE) ============
+let selectedRating = 5;
 const starContainer = document.getElementById("starRating");
 const ratingText = document.getElementById("ratingValueText");
 
@@ -59,7 +96,6 @@ function updateStarDisplay(rating) {
   }
 }
 
-// تفعيل اختيار النجوم بالنقر
 if (starContainer) {
   updateStarDisplay(selectedRating);
   const stars = starContainer.querySelectorAll("i");
@@ -71,87 +107,123 @@ if (starContainer) {
   });
 }
 
-// جلب التقييمات وعرضها من التخزين المحلي
 const reviewsContainer = document.getElementById("reviewsContainer");
 
-function renderReviews() {
+// جلب التقييمات وعرضها حياً من Firebase
+function listenToReviews() {
   if (!reviewsContainer) return;
-  const storedReviews =
-    JSON.parse(localStorage.getItem("issa_store_reviews")) || [];
 
-  if (storedReviews.length === 0) {
-    reviewsContainer.innerHTML = `<div class="no-reviews-msg">كن أول من يقيّم خدماتنا ويشارك تجربته!</div>`;
-    return;
-  }
+  db.collection("reviews")
+    .orderBy("createdAt", "desc")
+    .onSnapshot(
+      (snapshot) => {
+        if (snapshot.empty) {
+          reviewsContainer.innerHTML = `<div class="no-reviews-msg">كن أول من يقيّم خدماتنا ويشارك تجربته!</div>`;
+          return;
+        }
 
-  reviewsContainer.innerHTML = "";
-  storedReviews.forEach((rev) => {
-    let starsHtml = "";
-    for (let i = 1; i <= 5; i++) {
-      if (i <= rev.rating) {
-        starsHtml += `<i class="fa-solid fa-star"></i> `;
-      } else {
-        starsHtml += `<i class="fa-regular fa-star"></i> `;
-      }
-    }
+        reviewsContainer.innerHTML = "";
+        snapshot.forEach((doc) => {
+          const rev = doc.data();
+          let starsHtml = "";
+          for (let i = 1; i <= 5; i++) {
+            if (i <= rev.rating) {
+              starsHtml += `<i class="fa-solid fa-star"></i> `;
+            } else {
+              starsHtml += `<i class="fa-regular fa-star"></i> `;
+            }
+          }
 
-    const reviewCard = document.createElement("div");
-    reviewCard.className = "review-box";
-    reviewCard.innerHTML = `
-      <div class="stars">${starsHtml}</div>
-      <p>"${rev.comment || "تقييم ممتاز بدون تعليق إضافي"}"</p>
-      <div class="user-info">
-        <i class="fa-solid fa-circle-user"></i>
-        <div>
-          <h4>${rev.name}</h4>
-          <span>عميل موثق</span>
-        </div>
-      </div>
-    `;
-    reviewsContainer.appendChild(reviewCard);
-  });
+          const reviewCard = document.createElement("div");
+          reviewCard.className = "review-box";
+          reviewCard.innerHTML = `
+          <div class="stars">${starsHtml}</div>
+          <p>"${rev.comment || "تقييم ممتاز بدون تعليق إضافي"}"</p>
+          <div class="user-info">
+            <i class="fa-solid fa-circle-user"></i>
+            <div>
+              <h4>${rev.name}</h4>
+              <span>عميل موثق</span>
+            </div>
+          </div>
+        `;
+          reviewsContainer.appendChild(reviewCard);
+        });
+      },
+      (error) => {
+        console.error("Error fetching reviews:", error);
+        reviewsContainer.innerHTML = `<div class="no-reviews-msg">حدث خطأ في تحميل التقييمات.</div>`;
+      },
+    );
 }
 
-// معالجة نموذج إرسال التقييم
+// دالة فحص البريد الإلكتروني الحقيقي
+function isValidEmail(email) {
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(email)) return false;
+
+  const fakeDomains = [
+    "tempmail.com",
+    "10minutemail.com",
+    "guerrillamail.com",
+    "mailinator.com",
+    "throwawaymail.com",
+    "yopmail.com",
+    "sharklasers.com",
+  ];
+  const domain = email.split("@")[1].toLowerCase();
+  if (fakeDomains.includes(domain)) return false;
+
+  return true;
+}
+
+// معالجة إرسال التقييم وحفظه في Firebase
 const reviewForm = document.getElementById("reviewForm");
+const submitReviewBtn = document.getElementById("submitReviewBtn");
+
 if (reviewForm) {
-  reviewForm.addEventListener("submit", (e) => {
+  reviewForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const name = document.getElementById("reviewerName").value.trim();
     const email = document.getElementById("reviewerEmail").value.trim();
     const comment = document.getElementById("reviewerComment").value.trim();
 
-    // التحقق من البريد الإلكتروني
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      alert("يرجى إدخال بريد إلكتروني صالح.");
+    if (!isValidEmail(email)) {
+      alert(
+        "يرجى إدخال بريد إلكتروني حقيقي وصحيح (مثل Gmail أو Yahoo أو Outlook).",
+      );
       return;
     }
 
-    const newReview = {
-      name: name,
-      email: email,
-      rating: selectedRating,
-      comment: comment,
-      date: new Date().toISOString(),
-    };
+    submitReviewBtn.disabled = true;
+    submitReviewBtn.textContent = "جاري الإرسال...";
 
-    const storedReviews =
-      JSON.parse(localStorage.getItem("issa_store_reviews")) || [];
-    storedReviews.unshift(newReview); // إضافة التقييم في البداية
-    localStorage.setItem("issa_store_reviews", JSON.stringify(storedReviews));
+    try {
+      // 1. الحفظ في Firebase Firestore
+      await db.collection("reviews").add({
+        name: name,
+        email: email,
+        rating: selectedRating,
+        comment: comment,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
 
-    // إعادة تعيين الحقول وعرض التقييمات
-    reviewForm.reset();
-    selectedRating = 5;
-    updateStarDisplay(selectedRating);
-    renderReviews();
-    alert("شكراً لك! تم إضافة تقييمك بنجاح.");
+      // 2. إعادة ضبط النموذج
+      reviewForm.reset();
+      selectedRating = 5;
+      updateStarDisplay(selectedRating);
+      alert("شكراً لك! تم إضافة تقييمك وحفظه بنجاح.");
+    } catch (error) {
+      console.error("Error adding review:", error);
+      alert("حدث خطأ أثناء إرسال التقييم، يرجى المحاولة مرة أخرى.");
+    } finally {
+      submitReviewBtn.disabled = false;
+      submitReviewBtn.textContent = "إرسال التقييم";
+    }
   });
 }
 
-// تشغيل عرض التقييمات عند تحميل الصفحة
 document.addEventListener("DOMContentLoaded", () => {
-  renderReviews();
+  listenToReviews();
 });
