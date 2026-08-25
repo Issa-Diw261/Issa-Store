@@ -70,6 +70,26 @@ body {
   letter-spacing: 1px;
 }
 
+.menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--gold);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 5px;
+  transition: var(--transition);
+}
+
+.menu-toggle:hover {
+  transform: scale(1.1);
+}
+
+.navbar nav {
+  display: flex;
+  align-items: center;
+}
+
 .navbar nav a {
   margin: 0 15px;
   text-decoration: none;
@@ -994,35 +1014,61 @@ body {
   font-weight: 700;
 }
 
-/* ============ RESPONSIVE ============ */
-@media (max-width: 768px) {
+/* ============ RESPONSIVE & MOBILE MENU ============ */
+@media (max-width: 860px) {
   .navbar {
-    padding: 15px 20px;
-    flex-direction: column;
-    gap: 15px;
+    padding: 15px 25px;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .menu-toggle {
+    display: block;
   }
 
   .navbar nav {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 100%;
+    background: rgba(11, 17, 32, 0.98);
+    backdrop-filter: blur(15px);
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+    gap: 15px;
+    border-bottom: 1px solid var(--border-light);
+    box-shadow: var(--shadow-dark);
+    display: none;
+  }
+
+  .navbar nav.open {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 5px;
+    animation: fadeInDown 0.3s ease forwards;
   }
 
   .navbar nav a {
-    margin: 0 8px;
-    font-size: 13px;
+    margin: 10px 0;
+    font-size: 16px;
+    width: 80%;
+    text-align: center;
+    padding: 8px 0;
+    border-radius: 8px;
+  }
+
+  .navbar nav a:hover {
+    background: rgba(212, 175, 55, 0.1);
   }
 
   .main {
-    padding: 30px 20px;
+    padding: 40px 20px;
     margin: 15px 10px;
     flex-direction: column;
     text-align: center;
   }
 
   .main-text h1 {
-    font-size: 28px;
+    font-size: 32px;
   }
 
   .main-text p {
@@ -1039,7 +1085,7 @@ body {
   }
 
   .main-video video {
-    max-height: 250px;
+    max-height: 260px;
   }
 
   .cards {
@@ -1057,7 +1103,7 @@ body {
   .about {
     flex-direction: column;
     text-align: center;
-    padding: 30px 20px;
+    padding: 35px 20px;
     margin: 10px;
   }
 
@@ -1067,10 +1113,6 @@ body {
 
   .about-text h2 {
     font-size: 28px;
-  }
-
-  .about-text p {
-    font-size: 16px;
   }
 
   .about-image img {
@@ -1087,14 +1129,6 @@ body {
     margin: 10px;
   }
 
-  .why h2,
-  .how-to-order h2,
-  .faq h2,
-  .contact h2,
-  .reviews h2 {
-    font-size: 28px;
-  }
-
   .form-row {
     flex-direction: column;
     gap: 10px;
@@ -1107,63 +1141,22 @@ body {
     gap: 20px;
   }
 
-  .step {
-    width: 100%;
-    max-width: 350px;
-    margin: 0 auto;
-  }
-
-  .faq-item {
-    padding: 15px 18px;
-  }
-
-  .contact-btn {
-    width: 100%;
-    max-width: 300px;
-    justify-content: center;
-  }
-
   .footer-container {
     flex-direction: column;
     align-items: center;
     text-align: center;
     gap: 25px;
   }
-
-  .footer-section {
-    width: 100%;
-    max-width: 400px;
-  }
 }
 
-/* شاشات صغيرة جداً */
-@media (max-width: 480px) {
-  .navbar nav a {
-    font-size: 11px;
-    margin: 0 5px;
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
   }
-
-  .main-text h1 {
-    font-size: 24px;
-  }
-
-  .main-buttons button {
-    padding: 12px 20px;
-    font-size: 14px;
-  }
-
-  .why-box,
-  .step,
-  .review-box,
-  .review-form {
-    padding: 25px 15px 20px;
-  }
-
-  .why-icon,
-  .step .icon {
-    width: 65px;
-    height: 65px;
-    font-size: 28px;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -1197,8 +1190,12 @@ body {
   }
 }
 
-/* ============ تفعيل الحركة عند رؤية القسم ============ */
 .why.in-view .why-box,
 .how-to-order.in-view .step {
   animation-play-state: running;
+}
+.star-rating i {
+  pointer-events: auto !important;
+  cursor: pointer;
+  padding: 4px;
 }
