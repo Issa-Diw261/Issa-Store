@@ -27,13 +27,23 @@
       <div class="logo">
         <a href="#">issa store</a>
       </div>
-      <nav>
-        <a href="#main">الرئيسية</a>
-        <a href="#cards">الخدمات</a>
-        <a href="#reviews">آراء العملاء</a>
-        <a href="#about">حول الموقع</a>
-        <a href="./Sections/SignIn.html">تسجيل دخول</a>
-        <a href="#contact">تواصل معنا</a>
+
+      <!-- HAMBURGER TOGGLE BUTTON -->
+      <button
+        class="menu-toggle"
+        id="menuToggle"
+        aria-label="Toggle Navigation"
+      >
+        <i class="fa-solid fa-bars"></i>
+      </button>
+
+      <nav id="navLinks">
+        <a href="#main" class="nav-item">الرئيسية</a>
+        <a href="#cards" class="nav-item">الخدمات</a>
+        <a href="#reviews" class="nav-item">آراء العملاء</a>
+        <a href="#about" class="nav-item">حول الموقع</a>
+        <a href="./Sections/SignIn.html" class="nav-item">تسجيل دخول</a>
+        <a href="#contact" class="nav-item">تواصل معنا</a>
       </nav>
     </header>
 
@@ -130,7 +140,7 @@
           <input
             type="email"
             id="reviewerEmail"
-            placeholder="البريد الإلكتروني (مطلوب للتحقق)"
+            placeholder="البريد الإلكتروني الحقيقي (مطلوب)"
             required
           />
         </div>
@@ -150,12 +160,14 @@
           rows="3"
           placeholder="اكتب رأيك أو ملاحظاتك هنا..."
         ></textarea>
-        <button type="submit" class="submit-review-btn">إرسال التقييم</button>
+        <button type="submit" class="submit-review-btn" id="submitReviewBtn">
+          إرسال التقييم
+        </button>
       </form>
 
-      <!-- شبكة عرض التقييمات المحفوظة -->
+      <!-- شبكة عرض التقييمات المحفوظة سحابياً -->
       <div class="reviews-container" id="reviewsContainer">
-        <!-- يتم ملء هذا القسم برمجياً من المستخدمين -->
+        <div class="no-reviews-msg">جاري تحميل التقييمات...</div>
       </div>
     </section>
 
@@ -327,6 +339,13 @@
         <p>&copy; 2026 - جميع الحقوق محفوظة لصالح <span>ISSA DIWANY</span></p>
       </div>
     </footer>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <!-- EmailJS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- Main Script -->
     <script src="New-Issa-Store.js"></script>
   </body>
 </html>
